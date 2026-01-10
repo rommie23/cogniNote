@@ -227,47 +227,6 @@ class _DateEntriesScreenState extends State<DateEntriesScreen> {
                                   ],
 
                                   const SizedBox(height: 12),
-
-                                  // Delete Button
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Material(
-                                        color: const Color(0xFFf9d6d5),
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: InkWell(
-                                          onTap: () =>
-                                              _showDeleteDialog(entry.id),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                              horizontal: 16,
-                                            ),
-                                            child: const Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.delete,
-                                                  size: 18,
-                                                  color: Color(0xFFb22222),
-                                                ),
-                                                SizedBox(width: 6),
-                                                Text(
-                                                  'Delete',
-                                                  style: TextStyle(
-                                                    color: Color(0xFFb22222),
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                                 ],
                               ),
                             ),
