@@ -50,8 +50,9 @@ class ConsentDialog extends StatelessWidget {
                 'Your entries are stored only on your device using secure local storage.\n\n'
                 '• This design is intentional for your privacy — your journal data never leaves your phone and is never uploaded to any server.\n'
                 '• This also means that if your device is lost, reset, damaged or the app is uninstalled,your data cannot be recovered by us because we never have access to it.\n'
-                '• By continuing, you acknowledge that your privacy and data security are fully in your control, and you agree to our Terms & Privacy Policy.'
-                '• If you want more details, please visit the About page before using the app.',
+                '• By continuing, you acknowledge that your privacy and data security are fully in your control, and you agree to our Terms & Privacy Policy.\n'
+                '• If you want more details, please visit the About page before using the app.\n'
+                '• For any improvement or suggestions contact us at rohitthakur023@gmail.com, We aim to respond within a few business days. .',
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(0xFF3c096c),

@@ -1,7 +1,8 @@
 // import 'package:flutter/material.dart';
 // import '../models/journal_entry.dart';
 // import '../database/database_helper.dart';
-// import '../component//hamburger_menu.dart';
+// import '../component/hamburger_menu.dart';
+// import '../ai/bias_detector.dart';
 // import 'yearly_chart_screen.dart';
 // import 'about_screen.dart';
 
@@ -15,6 +16,7 @@
 // class _InsertScreenState extends State<InsertScreen> {
 //   final TextEditingController _textController = TextEditingController();
 //   final List<String> _selectedBiases = [];
+//   List<String> _suggestedBiases = [];
 //   int? _openCategory;
 
 //   final List<Map<String, dynamic>> _biasCategories = [
@@ -59,6 +61,17 @@
 //     },
 //   ];
 
+//   void _updateSuggestions() {
+//     final text = _textController.text.trim();
+//     if (text.isEmpty) {
+//       setState(() => _suggestedBiases = []);
+//       return;
+//     }
+//     setState(() {
+//       _suggestedBiases = BiasDetector.detectBiases(text);
+//     });
+//   }
+
 //   void _toggleBias(String bias) {
 //     setState(() {
 //       if (_selectedBiases.contains(bias)) {
@@ -93,184 +106,176 @@
 //       createdAt: DateTime.now(),
 //     );
 
-//     try {
-//       await DatabaseHelper().insertEntry(entry);
+//     await DatabaseHelper().insertEntry(entry);
 
-//       _textController.clear();
-//       setState(() {
-//         _selectedBiases.clear();
-//       });
+//     _textController.clear();
+//     setState(() {
+//       _selectedBiases.clear();
+//       _suggestedBiases.clear();
+//     });
 
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(
-//           content: Text('Entry saved successfully!'),
-//           backgroundColor: Colors.green,
-//         ),
-//       );
-//     } catch (e) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text('Error saving entry: $e'),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//     }
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(
+//           content: Text("Entry saved!"), backgroundColor: Colors.green),
+//     );
 //   }
 
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       backgroundColor: const Color(0xFFfaf7ff),
+
+//       // 🔥 Automatically adjusts when keyboard opens
+//       resizeToAvoidBottomInset: true,
+
 //       body: SafeArea(
-//         child: Padding(
-//           padding: const EdgeInsets.all(20),
-//           child: Column(
-//             children: [
-//               // Header
-//               Row(
-//                 children: [
-//                   const Icon(
-//                     Icons.auto_awesome,
-//                     size: 28,
-//                     color: Color(0xFF5a189a),
-//                   ),
-//                   const SizedBox(width: 10),
-//                   const Text(
-//                     'Add Observation',
-//                     style: TextStyle(
-//                       fontSize: 24,
-//                       fontWeight: FontWeight.bold,
-//                       color: Color(0xFF5a189a),
-//                     ),
-//                   ),
-//                   const Spacer(),
-//                   HamburgerMenu(
-//                     options: [
-//                       HamburgerMenuItem(
-//                         label: "Yearly Chart",
-//                         icon: Icons.bar_chart,
-//                         onPress: () {
-//                           Navigator.push(
-//                             context,
-//                             MaterialPageRoute(
-//                                 builder: (context) =>
-//                                     const YearlyChartScreen()),
-//                           );
-//                         },
-//                       ),
-//                       HamburgerMenuItem(
-//                         label: "About",
-//                         icon: Icons.info,
-//                         onPress: () {
-//                           Navigator.push(
-//                             context,
-//                             MaterialPageRoute(
-//                                 builder: (context) => const AboutScreen()),
-//                           );
-//                         },
-//                       ),
-//                     ],
-//                   )
-//                 ],
-//               ),
-//               const SizedBox(height: 25),
-
-//               // Text Input Section
-//               const Align(
-//                 alignment: Alignment.centerLeft,
-//                 child: Text(
-//                   'Your Observation',
-//                   style: TextStyle(
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.w600,
-//                     color: Color(0xFF3c096c),
-//                   ),
-//                 ),
-//               ),
-//               const SizedBox(height: 8),
-//               Container(
-//                 decoration: BoxDecoration(
-//                   color: Colors.white,
-//                   borderRadius: BorderRadius.circular(12),
-//                   border: Border.all(color: const Color(0xFFbda4e5)),
-//                 ),
-//                 child: TextField(
-//                   controller: _textController,
-//                   maxLines: 4,
-//                   decoration: const InputDecoration(
-//                     hintText: 'Describe what you observed today...',
-//                     hintStyle: TextStyle(color: Color(0xFF999999)),
-//                     border: InputBorder.none,
-//                     contentPadding: EdgeInsets.all(16),
-//                   ),
-//                   style: const TextStyle(fontSize: 16),
-//                 ),
-//               ),
-//               const SizedBox(height: 10),
-
-//               // Bias Categories Section
-//               const Align(
-//                 alignment: Alignment.centerLeft,
-//                 child: Text(
-//                   'Select Bias Categories',
-//                   style: TextStyle(
-//                     fontSize: 16,
-//                     fontWeight: FontWeight.w600,
-//                     color: Color(0xFF3c096c),
-//                   ),
-//                 ),
-//               ),
-//               const SizedBox(height: 4),
-
-//               // Bias Categories List
-//               Expanded(
-//                 child: ListView(
+//         child: Column(
+//           children: [
+//             _buildHeader(),
+//             Expanded(
+//               child: SingleChildScrollView(
+//                 padding: const EdgeInsets.all(20),
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
 //                   children: [
-//                     for (int index = 0; index < _biasCategories.length; index++)
-//                       _buildBiasCategory(index, _biasCategories[index]),
+//                     _buildInputBox(),
+//                     const SizedBox(height: 12),
+//                     _buildSuggestedBiases(),
+//                     const SizedBox(height: 20),
+//                     _buildBiasCategories(),
+//                     const SizedBox(height: 100), // space before bottom button
 //                   ],
 //                 ),
 //               ),
-
-//               // Save Button
-//               const SizedBox(height: 20),
-//               SizedBox(
-//                 width: double.infinity,
-//                 height: 56,
-//                 child: ElevatedButton(
-//                   onPressed: _saveEntry,
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: const Color(0xFF7b2cbf),
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(12),
-//                     ),
-//                     elevation: 2,
-//                   ),
-//                   child: const Row(
-//                     mainAxisAlignment: MainAxisAlignment.center,
-//                     children: [
-//                       Icon(Icons.save, color: Colors.white, size: 22),
-//                       SizedBox(width: 8),
-//                       Text(
-//                         'Save Entry',
-//                         style: TextStyle(
-//                           color: Colors.white,
-//                           fontSize: 18,
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
+//             ),
+//             _buildSaveButton(),
+//           ],
 //         ),
 //       ),
 //     );
 //   }
 
-//   Widget _buildBiasCategory(int index, Map<String, dynamic> category) {
+//   Widget _buildHeader() {
+//     return Padding(
+//       padding: const EdgeInsets.all(20),
+//       child: Row(
+//         children: [
+//           const Icon(Icons.auto_awesome, size: 28, color: Color(0xFF5a189a)),
+//           const SizedBox(width: 10),
+//           const Text(
+//             'Add Observation',
+//             style: TextStyle(
+//               fontSize: 24,
+//               fontWeight: FontWeight.bold,
+//               color: Color(0xFF5a189a),
+//             ),
+//           ),
+//           const Spacer(),
+//           HamburgerMenu(options: [
+//             HamburgerMenuItem(
+//               label: "Yearly Chart",
+//               icon: Icons.bar_chart,
+//               onPress: () => Navigator.push(
+//                 context,
+//                 MaterialPageRoute(builder: (c) => const YearlyChartScreen()),
+//               ),
+//             ),
+//             HamburgerMenuItem(
+//               label: "About",
+//               icon: Icons.info,
+//               onPress: () => Navigator.push(
+//                 context,
+//                 MaterialPageRoute(builder: (c) => const AboutScreen()),
+//               ),
+//             ),
+//           ])
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildInputBox() {
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         border: Border.all(color: const Color(0xFFbda4e5)),
+//         borderRadius: BorderRadius.circular(12),
+//       ),
+//       child: TextField(
+//         controller: _textController,
+//         maxLines: 4,
+//         onChanged: (_) => _updateSuggestions(),
+//         decoration: const InputDecoration(
+//           hintText: "Describe what you observed today...",
+//           border: InputBorder.none,
+//           contentPadding: EdgeInsets.all(16),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildSuggestedBiases() {
+//     if (_suggestedBiases.isEmpty) return const SizedBox.shrink();
+
+//     return Container(
+//       width: double.infinity,
+//       padding: const EdgeInsets.all(14),
+//       decoration: BoxDecoration(
+//         color: const Color(0xFFe9d8ff),
+//         borderRadius: BorderRadius.circular(12),
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           const Text(
+//             "Suggested Biases:",
+//             style: TextStyle(
+//                 fontWeight: FontWeight.bold, color: Color(0xFF5a189a)),
+//           ),
+//           const SizedBox(height: 8),
+
+//           // Wrap suggestions with scroll if many
+//           Wrap(
+//             spacing: 8,
+//             runSpacing: 8,
+//             children: _suggestedBiases.map((bias) {
+//               final selected = _selectedBiases.contains(bias);
+//               return ChoiceChip(
+//                 label: Text(bias),
+//                 selected: selected,
+//                 onSelected: (_) => _toggleBias(bias),
+//                 selectedColor: const Color(0xFFc77dff),
+//               );
+//             }).toList(),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildBiasCategories() {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         const Text(
+//           "Bias Categories",
+//           style: TextStyle(
+//             fontSize: 16,
+//             fontWeight: FontWeight.w600,
+//             color: Color(0xFF3c096c),
+//           ),
+//         ),
+//         const SizedBox(height: 8),
+
+//         // List of all categories
+//         ..._biasCategories.asMap().entries.map((entry) {
+//           return _buildCategory(entry.key, entry.value);
+//         }).toList(),
+//       ],
+//     );
+//   }
+
+//   Widget _buildCategory(int index, Map<String, dynamic> category) {
 //     return Container(
 //       margin: const EdgeInsets.only(bottom: 12),
 //       decoration: BoxDecoration(
@@ -279,80 +284,53 @@
 //       ),
 //       child: Column(
 //         children: [
-//           // Category Header
 //           ListTile(
 //             title: Text(
 //               category['title'],
 //               style: const TextStyle(
+//                 fontSize: 17,
 //                 fontWeight: FontWeight.bold,
-//                 fontSize: 16,
 //                 color: Color(0xFF5a189a),
 //               ),
 //             ),
-//             trailing: Text(
-//               _openCategory == index ? '−' : '+',
-//               style: const TextStyle(
-//                 fontSize: 20,
-//                 fontWeight: FontWeight.bold,
-//                 color: Color(0xFF7b2cbf),
-//               ),
+//             trailing: Icon(
+//               _openCategory == index ? Icons.expand_less : Icons.expand_more,
+//               color: const Color(0xFF7b2cbf),
 //             ),
 //             onTap: () => _toggleCategory(index),
 //           ),
-
-//           // Expanded Biases
 //           if (_openCategory == index)
 //             Padding(
-//               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+//               padding: const EdgeInsets.only(bottom: 12),
 //               child: Column(
-//                 children: (category['biases'] as List<String>).map((bias) {
-//                   final isSelected = _selectedBiases.contains(bias);
+//                 children: (category["biases"] as List<String>).map((bias) {
+//                   final selected = _selectedBiases.contains(bias);
 //                   return Padding(
-//                     padding: const EdgeInsets.only(bottom: 8),
-//                     child: Material(
-//                       color: Colors.transparent,
-//                       child: InkWell(
-//                         onTap: () => _toggleBias(bias),
-//                         borderRadius: BorderRadius.circular(8),
-//                         child: Container(
-//                           width: double.infinity,
-//                           padding: const EdgeInsets.symmetric(
-//                             vertical: 12,
-//                             horizontal: 16,
+//                     padding:
+//                         const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+//                     child: GestureDetector(
+//                       onTap: () => _toggleBias(bias),
+//                       child: Container(
+//                         width: double.infinity,
+//                         padding: const EdgeInsets.all(14),
+//                         decoration: BoxDecoration(
+//                           color:
+//                               selected ? const Color(0xFFe0c3fc) : Colors.white,
+//                           borderRadius: BorderRadius.circular(10),
+//                           border: Border.all(
+//                             color: selected
+//                                 ? const Color(0xFF7b2cbf)
+//                                 : const Color(0xFFd4c2e8),
 //                           ),
-//                           decoration: BoxDecoration(
-//                             color: isSelected
-//                                 ? const Color(0xFFe0c3fc)
-//                                 : Colors.white,
-//                             borderRadius: BorderRadius.circular(8),
-//                             border: Border.all(
-//                               color: isSelected
-//                                   ? const Color(0xFF7b2cbf)
-//                                   : const Color(0xFFd4c2e8),
-//                             ),
-//                           ),
-//                           child: Row(
-//                             children: [
-//                               Icon(
-//                                 isSelected
-//                                     ? Icons.check_box
-//                                     : Icons.check_box_outline_blank,
-//                                 color: const Color(0xFF7b2cbf),
-//                               ),
-//                               const SizedBox(width: 12),
-//                               Expanded(
-//                                 child: Text(
-//                                   bias,
-//                                   style: TextStyle(
-//                                     fontSize: 14,
-//                                     fontWeight: FontWeight.w500,
-//                                     color: isSelected
-//                                         ? const Color(0xFF5a189a)
-//                                         : const Color(0xFF444444),
-//                                   ),
-//                                 ),
-//                               ),
-//                             ],
+//                         ),
+//                         child: Text(
+//                           bias,
+//                           style: TextStyle(
+//                             fontSize: 14,
+//                             fontWeight: FontWeight.w600,
+//                             color: selected
+//                                 ? const Color(0xFF5a189a)
+//                                 : const Color(0xFF333333),
 //                           ),
 //                         ),
 //                       ),
@@ -366,10 +344,32 @@
 //     );
 //   }
 
-//   @override
-//   void dispose() {
-//     _textController.dispose();
-//     super.dispose();
+//   Widget _buildSaveButton() {
+//     return SafeArea(
+//       child: Container(
+//         padding: const EdgeInsets.fromLTRB(20, 5, 20, 15),
+//         width: double.infinity,
+//         child: SizedBox(
+//           height: 55,
+//           child: ElevatedButton(
+//             onPressed: _saveEntry,
+//             style: ElevatedButton.styleFrom(
+//               backgroundColor: const Color(0xFF7b2cbf),
+//               shape: RoundedRectangleBorder(
+//                   borderRadius: BorderRadius.circular(14)),
+//             ),
+//             child: const Text(
+//               "Save Entry",
+//               style: TextStyle(
+//                 fontSize: 18,
+//                 fontWeight: FontWeight.bold,
+//                 color: Colors.white,
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
 //   }
 // }
 
@@ -380,9 +380,15 @@ import '../component/hamburger_menu.dart';
 import '../ai/bias_detector.dart';
 import 'yearly_chart_screen.dart';
 import 'about_screen.dart';
+import '../theme/theme_controller.dart';
 
 class InsertScreen extends StatefulWidget {
-  const InsertScreen({Key? key}) : super(key: key);
+  final ThemeController themeController;
+
+  const InsertScreen({
+    Key? key,
+    required this.themeController,
+  }) : super(key: key);
 
   @override
   State<InsertScreen> createState() => _InsertScreenState();
@@ -491,22 +497,23 @@ class _InsertScreenState extends State<InsertScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-          content: Text("Entry saved!"), backgroundColor: Colors.green),
+        content: Text("Entry saved!"),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.themeController.isDarkMode;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFfaf7ff),
-
-      // 🔥 Automatically adjusts when keyboard opens
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: true,
-
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(isDark),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -518,7 +525,7 @@ class _InsertScreenState extends State<InsertScreen> {
                     _buildSuggestedBiases(),
                     const SizedBox(height: 20),
                     _buildBiasCategories(),
-                    const SizedBox(height: 100), // space before bottom button
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -530,7 +537,9 @@ class _InsertScreenState extends State<InsertScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  // ───────────────── HEADER ─────────────────
+
+  Widget _buildHeader(bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -546,33 +555,52 @@ class _InsertScreenState extends State<InsertScreen> {
             ),
           ),
           const Spacer(),
-          HamburgerMenu(options: [
-            HamburgerMenuItem(
-              label: "Yearly Chart",
-              icon: Icons.bar_chart,
-              onPress: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (c) => const YearlyChartScreen()),
-              ),
+
+          // 🌙 / 🌞 THEME TOGGLE
+          IconButton(
+            tooltip: "Toggle theme",
+            icon: Icon(
+              isDark ? Icons.light_mode : Icons.dark_mode,
+              color: const Color(0xFF5a189a),
             ),
-            HamburgerMenuItem(
-              label: "About",
-              icon: Icons.info,
-              onPress: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (c) => const AboutScreen()),
+            onPressed: widget.themeController.toggleTheme,
+          ),
+
+          HamburgerMenu(
+            options: [
+              HamburgerMenuItem(
+                label: "Yearly Chart",
+                icon: Icons.bar_chart,
+                onPress: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (c) => const YearlyChartScreen(),
+                  ),
+                ),
               ),
-            ),
-          ])
+              HamburgerMenuItem(
+                label: "About",
+                icon: Icons.info,
+                onPress: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (c) => const AboutScreen(),
+                  ),
+                ),
+              ),
+            ],
+          )
         ],
       ),
     );
   }
 
+  // ───────────────── INPUT BOX ─────────────────
+
   Widget _buildInputBox() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         border: Border.all(color: const Color(0xFFbda4e5)),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -580,14 +608,22 @@ class _InsertScreenState extends State<InsertScreen> {
         controller: _textController,
         maxLines: 4,
         onChanged: (_) => _updateSuggestions(),
-        decoration: const InputDecoration(
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+        decoration: InputDecoration(
           hintText: "Describe what you observed today...",
+          hintStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.all(16),
+          contentPadding: const EdgeInsets.all(16),
         ),
       ),
     );
   }
+
+  // ───────────────── SUGGESTED BIASES ─────────────────
 
   Widget _buildSuggestedBiases() {
     if (_suggestedBiases.isEmpty) return const SizedBox.shrink();
@@ -596,7 +632,7 @@ class _InsertScreenState extends State<InsertScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFe9d8ff),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -605,11 +641,11 @@ class _InsertScreenState extends State<InsertScreen> {
           const Text(
             "Suggested Biases:",
             style: TextStyle(
-                fontWeight: FontWeight.bold, color: Color(0xFF5a189a)),
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF5a189a),
+            ),
           ),
           const SizedBox(height: 8),
-
-          // Wrap suggestions with scroll if many
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -628,6 +664,8 @@ class _InsertScreenState extends State<InsertScreen> {
     );
   }
 
+  // ───────────────── CATEGORIES ─────────────────
+
   Widget _buildBiasCategories() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,11 +679,9 @@ class _InsertScreenState extends State<InsertScreen> {
           ),
         ),
         const SizedBox(height: 8),
-
-        // List of all categories
-        ..._biasCategories.asMap().entries.map((entry) {
-          return _buildCategory(entry.key, entry.value);
-        }).toList(),
+        ..._biasCategories.asMap().entries.map(
+              (entry) => _buildCategory(entry.key, entry.value),
+            ),
       ],
     );
   }
@@ -654,7 +690,7 @@ class _InsertScreenState extends State<InsertScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFf3d9ff),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -689,8 +725,9 @@ class _InsertScreenState extends State<InsertScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color:
-                              selected ? const Color(0xFFe0c3fc) : Colors.white,
+                          color: selected
+                              ? const Color(0xFFe0c3fc)
+                              : Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: selected
@@ -705,7 +742,7 @@ class _InsertScreenState extends State<InsertScreen> {
                             fontWeight: FontWeight.w600,
                             color: selected
                                 ? const Color(0xFF5a189a)
-                                : const Color(0xFF333333),
+                                : Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -719,6 +756,8 @@ class _InsertScreenState extends State<InsertScreen> {
     );
   }
 
+  // ───────────────── SAVE BUTTON ─────────────────
+
   Widget _buildSaveButton() {
     return SafeArea(
       child: Container(
@@ -731,7 +770,8 @@ class _InsertScreenState extends State<InsertScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7b2cbf),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             child: const Text(
               "Save Entry",
