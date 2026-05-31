@@ -139,4 +139,27 @@ class DatabaseHelper {
       whereArgs: [entry.id],
     );
   }
+
+  /////////// FUNCTION TO CHECK DB TABLES /////////
+  Future<void> debugPrintTables() async {
+    final db = await database;
+
+    final tables =
+        await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
+
+    print("---- TABLES ----");
+    for (var table in tables) {
+      print(table['name']);
+    }
+  }
+
+  // ✅ ADD THIS: Public method to reset/reopen the database connection
+  // Used after backup/restore to ensure fresh connection
+  Future<void> resetDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+    // Next call to `database` getter will reinitialize
+  }
 }
